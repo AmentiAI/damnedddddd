@@ -20,7 +20,7 @@ import * as bitcoin from 'bitcoinjs-lib'
 import { getBitcoinNetwork } from '@omnisat/lasereyes-core'
 import { toXOnly } from 'bitcoinjs-lib/src/psbt/bip371'
 import { getUTXOsForUseCase } from '@/lib/utxo-selector'
-import { getInscription, getInscriptionContent } from '@/lib/sandshrew-ord'
+import { getInscriptionContent } from '@/lib/sandshrew-ord'
 
 export default function BurnInscriptionsPage() {
   const { address, connected, client, signPsbt, paymentAddress, getInscriptions: fetchInscriptions } = useLaserEyes()
@@ -40,7 +40,7 @@ export default function BurnInscriptionsPage() {
 
   // Fetch inscriptions when wallet is connected
   useEffect(() => {
-    if (connected && address && fetchInscriptions) {
+    if (connected && address) {
       loadInscriptions()
     } else {
       setInscriptions([])
@@ -49,8 +49,9 @@ export default function BurnInscriptionsPage() {
   }, [connected, address, fetchInscriptions])
 
   const loadInscriptions = async () => {
-    if (!fetchInscriptions) return
-    
+    if (!client) return
+    if (typeof fetchInscriptions !== 'function') return
+
     setLoadingInscriptions(true)
     try {
       const data = await fetchInscriptions()
@@ -591,3 +592,6 @@ export default function BurnInscriptionsPage() {
     </div>
   )
 }
+
+
+
