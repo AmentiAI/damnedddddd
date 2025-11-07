@@ -47,7 +47,7 @@ export default function TransferInscriptionsPage() {
 
   // Fetch inscriptions when wallet is connected
   useEffect(() => {
-    if (connected && address && fetchInscriptions) {
+    if (connected && address) {
       loadInscriptions()
     } else {
       setInscriptions([])
@@ -57,8 +57,6 @@ export default function TransferInscriptionsPage() {
   }, [connected, address, fetchInscriptions])
 
   const loadInscriptions = async () => {
-    if (!fetchInscriptions) return
-    
     setLoadingInscriptions(true)
     try {
       const data = await fetchInscriptions()
