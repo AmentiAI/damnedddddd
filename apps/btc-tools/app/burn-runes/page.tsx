@@ -230,7 +230,7 @@ export default function BurnRunesPage() {
       // Add OP_RETURN output
       psbt.addOutput({
         script: opReturnScript,
-        value: 0n,
+        value: BigInt(0),
       })
 
       // Add change output if needed
@@ -484,3 +484,4 @@ export default function BurnRunesPage() {
     </div>
   )
 }
+
