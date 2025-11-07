@@ -20,6 +20,7 @@ import { getBitcoinNetwork } from '@omnisat/lasereyes-core'
 import { estimateTransactionSize, calculateFee } from '@/lib/fee-calculator'
 import { getUTXOsForUseCase } from '@/lib/utxo-selector'
 import { getInscription, getInscriptionContent } from '@/lib/sandshrew-ord'
+import { toXOnly } from 'bitcoinjs-lib/src/psbt/bip371'
 
 interface Transfer {
   inscriptionId: string
@@ -28,7 +29,17 @@ interface Transfer {
 }
 
 export default function TransferInscriptionsPage() {
-  const { address, connected, client, signPsbt, sendInscriptions, getInscriptions: fetchInscriptions, paymentAddress } = useLaserEyes()
+  const {
+    address,
+    connected,
+    client,
+    signPsbt,
+    sendInscriptions,
+    getInscriptions: fetchInscriptions,
+    paymentAddress,
+    publicKey,
+    paymentPublicKey,
+  } = useLaserEyes()
   const { finalizePSBTTransaction, broadcastTransaction } = useSandshrewBitcoinRPC()
   const { utxos, loading: utxosLoading } = useFormattedUTXOs()
   
@@ -367,32 +378,46 @@ export default function TransferInscriptionsPage() {
         // Add inscription UTXO inputs
         for (const { utxo } of selectedUtxos) {
           const scriptPubKey = Buffer.from(utxo.scriptPubKey, 'hex')
-          psbt.addInput({
+          const inscriptionInput: any = {
             hash: utxo.txHash,
             index: utxo.txOutputIndex,
             witnessUtxo: {
               value: BigInt(utxo.btcValue),
               script: scriptPubKey,
             },
-            tapInternalKey: utxo.tapInternalKey 
-              ? Buffer.from(utxo.tapInternalKey, 'hex')
-              : undefined,
-          })
+          }
+
+          if (
+            publicKey &&
+            typeof utxo.address === 'string' &&
+            (utxo.address.startsWith('bc1p') || utxo.address.startsWith('tb1p'))
+          ) {
+            inscriptionInput.tapInternalKey = toXOnly(Buffer.from(publicKey, 'hex'))
+          }
+
+          psbt.addInput(inscriptionInput)
         }
 
         // Add payment UTXO for fees
         const paymentScriptPubKey = Buffer.from(paymentUtxo.scriptPubKey, 'hex')
-        psbt.addInput({
+        const paymentInput: any = {
           hash: paymentUtxo.txHash,
           index: paymentUtxo.txOutputIndex,
           witnessUtxo: {
             value: BigInt(paymentUtxo.btcValue),
             script: paymentScriptPubKey,
           },
-          tapInternalKey: paymentUtxo.tapInternalKey 
-            ? Buffer.from(paymentUtxo.tapInternalKey, 'hex')
-            : undefined,
-        })
+        }
+
+        if (
+          paymentPublicKey &&
+          paymentAddress &&
+          (paymentAddress.startsWith('bc1p') || paymentAddress.startsWith('tb1p'))
+        ) {
+          paymentInput.tapInternalKey = toXOnly(Buffer.from(paymentPublicKey, 'hex'))
+        }
+
+        psbt.addInput(paymentInput)
 
         // Add outputs (one per recipient with inscription)
         // Use the actual UTXO value to preserve the inscription's sats

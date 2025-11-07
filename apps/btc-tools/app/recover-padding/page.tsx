@@ -80,6 +80,8 @@ export default function RecoverPaddingPage() {
         tool_type: 'recover_padding',
         status: 'pending',
         tx_id: null,
+        psbt_hex: null,
+        psbt_base64: null,
         fee_rate: 2, // Default fee rate
         broadcast_method: 'mempool',
         network: 'mainnet',

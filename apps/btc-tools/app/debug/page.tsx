@@ -586,7 +586,8 @@ export default function DebugStationPage() {
                                             key={idx}
                                             className="text-xs bg-purple-500/20 text-purple-500 px-2 py-0.5 rounded"
                                           >
-                                            {rune.name || rune.id}
+                                            {truncateString(String(rune.runeId), 12)}
+                                            {rune.amount ? ` ×${rune.amount}` : ''}
                                           </code>
                                         ))}
                                       </div>
@@ -751,7 +752,8 @@ export default function DebugStationPage() {
                                               key={idx}
                                               className="text-xs bg-purple-500/20 text-purple-500 px-2 py-0.5 rounded"
                                             >
-                                              {rune.name || rune.id}
+                                              {truncateString(String(rune.runeId), 12)}
+                                              {rune.amount ? ` ×${rune.amount}` : ''}
                                             </code>
                                           ))}
                                         </div>

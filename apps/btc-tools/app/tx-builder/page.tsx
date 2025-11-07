@@ -12,6 +12,7 @@ import { useFormattedUTXOs } from '@/hooks/use-formatted-utxos'
 import { FeeSelector } from '@/components/fee-selector'
 import { BroadcastMethodSelector } from '@/components/broadcast-method-selector'
 import { createTxBuilderRecord } from '@/lib/db/queries'
+import type { TxInput, TxOutput } from '@/lib/db/types'
 import { formatSats, truncateString } from '@/lib/utils'
 import { estimateTransactionSize, calculateFee } from '@/lib/fee-calculator'
 import { getRecommendedFeeRate } from '@/lib/sandshrew-esplora'
@@ -213,7 +214,7 @@ export default function TxBuilderPage() {
           const opReturnScript = createOpReturnScript(output.data, output.encoding || 'utf-8')
           psbt.addOutput({
             script: opReturnScript,
-            value: 0n,
+            value: BigInt(0),
           })
         }
       }
@@ -251,25 +252,22 @@ export default function TxBuilderPage() {
 
       // Save to database
       const inputs = selectedUTXOObjects.map((utxo) => ({
-        type: 
-          utxo.hasInscriptions ? 'inscription' :
-          utxo.hasRunes || utxo.hasAlkanes ? 'rune' :
-          'cardinal',
+        type: utxo.hasInscriptions ? 'inscription' : utxo.hasRunes || utxo.hasAlkanes ? 'rune' : 'cardinal',
         tx_hash: utxo.txHash,
         tx_output_index: utxo.txOutputIndex,
         value: utxo.btcValue,
         address: utxo.address,
         inscription_id: utxo.inscriptions?.[0]?.inscriptionId,
         rune_id: utxo.runes?.[0]?.runeId,
-      }))
+      })) as TxInput[]
 
-      const dbOutputs = outputs.map(out => ({
+      const dbOutputs = outputs.map((out) => ({
         address: out.type === 'standard' ? out.address : '',
         amount: out.type === 'standard' ? out.amount : 0,
         type: out.type === 'standard' ? 'standard' : 'op_return',
         script: out.type === 'op_return' ? out.data : undefined,
         data: out.type === 'op_return' ? out.data : undefined,
-      }))
+      })) as TxOutput[]
 
       await createTxBuilderRecord({
         user_address: address,
@@ -282,6 +280,7 @@ export default function TxBuilderPage() {
         broadcast_method: broadcastMethod,
         psbt_hex: psbtHex,
         psbt_base64: signedResponse.signedPsbtBase64,
+        tx_id: broadcastTxId,
         status: broadcastTxId ? 'broadcasting' : 'signed',
         network: network,
       })

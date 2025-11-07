@@ -19,9 +19,10 @@ import { FileText, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import * as bitcoin from 'bitcoinjs-lib'
 import { getBitcoinNetwork } from '@omnisat/lasereyes-core'
+import { toXOnly } from 'bitcoinjs-lib/src/psbt/bip371'
 
 export default function OpReturnPage() {
-  const { address, connected, client, signPsbt } = useLaserEyes()
+  const { address, connected, client, signPsbt, paymentAddress, paymentPublicKey } = useLaserEyes()
   const { createPSBTTransaction, finalizePSBTTransaction, broadcastTransaction } = useSandshrewBitcoinRPC()
   const { utxos, loading: utxosLoading } = useFormattedUTXOs()
   
@@ -117,22 +118,30 @@ export default function OpReturnPage() {
 
       // Add input
       const scriptPubKey = Buffer.from(selectedUtxo.scriptPubKey, 'hex')
-      psbt.addInput({
+      const inputOptions: any = {
         hash: selectedUtxo.txHash,
         index: selectedUtxo.txOutputIndex,
         witnessUtxo: {
           value: BigInt(selectedUtxo.btcValue),
           script: scriptPubKey,
         },
-        tapInternalKey: selectedUtxo.tapInternalKey 
-          ? Buffer.from(selectedUtxo.tapInternalKey, 'hex')
-          : undefined,
-      })
+      }
+
+      if (
+        paymentAddress &&
+        paymentPublicKey &&
+        selectedUtxo.address === paymentAddress &&
+        (paymentAddress.startsWith('bc1p') || paymentAddress.startsWith('tb1p'))
+      ) {
+        inputOptions.tapInternalKey = toXOnly(Buffer.from(paymentPublicKey, 'hex'))
+      }
+
+      psbt.addInput(inputOptions)
 
       // Add OP_RETURN output
       psbt.addOutput({
         script: opReturnScript,
-        value: 0n,
+        value: BigInt(0),
       })
 
       // Add change output if needed
