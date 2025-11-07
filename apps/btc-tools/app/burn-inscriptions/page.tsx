@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useLaserEyes, type Inscription } from '@omnisat/lasereyes'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -46,11 +46,10 @@ export default function BurnInscriptionsPage() {
       setInscriptions([])
       setSelectedInscriptionIds(new Set())
     }
-  }, [connected, address, fetchInscriptions])
+  }, [connected, address, loadInscriptions])
 
-  const loadInscriptions = async () => {
+  const loadInscriptions = useCallback(async () => {
     if (!client) return
-    if (typeof fetchInscriptions !== 'function') return
 
     setLoadingInscriptions(true)
     try {
@@ -58,7 +57,7 @@ export default function BurnInscriptionsPage() {
       setInscriptions(data || [])
       
       // Load images for inscriptions
-      if (data && data.length > 0 && client) {
+      if (data && data.length > 0) {
         loadInscriptionImages(data)
       }
     } catch (error: any) {
@@ -67,7 +66,7 @@ export default function BurnInscriptionsPage() {
     } finally {
       setLoadingInscriptions(false)
     }
-  }
+  }, [client, fetchInscriptions])
 
   const loadInscriptionImages = async (inscriptionsToLoad: Inscription[]) => {
     if (!client) return
