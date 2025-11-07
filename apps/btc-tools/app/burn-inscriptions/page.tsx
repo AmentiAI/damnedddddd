@@ -38,16 +38,6 @@ export default function BurnInscriptionsPage() {
   const [loading, setLoading] = useState(false)
   const [estimatedFee, setEstimatedFee] = useState(0)
 
-  // Fetch inscriptions when wallet is connected
-  useEffect(() => {
-    if (connected && address) {
-      loadInscriptions()
-    } else {
-      setInscriptions([])
-      setSelectedInscriptionIds(new Set())
-    }
-  }, [connected, address, loadInscriptions])
-
   const loadInscriptions = useCallback(async () => {
     if (!client) return
 
@@ -67,6 +57,16 @@ export default function BurnInscriptionsPage() {
       setLoadingInscriptions(false)
     }
   }, [client, fetchInscriptions])
+
+  // Fetch inscriptions when wallet is connected
+  useEffect(() => {
+    if (connected && address) {
+      loadInscriptions()
+    } else {
+      setInscriptions([])
+      setSelectedInscriptionIds(new Set())
+    }
+  }, [connected, address, loadInscriptions])
 
   const loadInscriptionImages = async (inscriptionsToLoad: Inscription[]) => {
     if (!client) return
