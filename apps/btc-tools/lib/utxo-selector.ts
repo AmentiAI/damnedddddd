@@ -234,7 +234,7 @@ export function selectAssetUTXOs(
       const utxoRunes = utxo.runes || []
       const hasMatchingRune = runeIds.some((id) => {
         return utxoRunes.some((rune) => {
-          const runeId = typeof rune === 'string' ? rune : rune.id || rune.name || String(rune)
+          const runeId = typeof rune === 'string' ? rune : rune.runeId || String(rune)
           return runeId === id
         })
       })

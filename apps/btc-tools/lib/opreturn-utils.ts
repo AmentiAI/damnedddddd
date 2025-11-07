@@ -43,7 +43,7 @@ export function createOpReturnScript(data: string, encoding: 'utf-8' | 'hex' = '
     encodedData,
   ])
   
-  return script
+  return Buffer.from(script)
 }
 
 /**

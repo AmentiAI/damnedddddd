@@ -183,12 +183,12 @@ export function validateOfferPSBT(psbt: bitcoin.Psbt): {
   }
 
   // Check outputs
-  if (psbt.outputCount < 2) {
+  if (psbt.txOutputs.length < 2) {
     errors.push('PSBT must have at least 2 outputs (payment + inscription)')
   }
 
   // Check that it's not fully signed
-  const isFullySigned = psbt.inputs.every((input, index) => {
+  const isFullySigned = psbt.txInputs.every((_input: bitcoin.PsbtTxInput, index) => {
     try {
       psbt.validateSignaturesOfInput(index, () => true)
       return true
