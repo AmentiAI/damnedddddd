@@ -268,7 +268,7 @@ export default function BurnInscriptionsPage() {
       // Add OP_RETURN output
       psbt.addOutput({
         script: opReturnScript,
-        value: 0n,
+        value: 0,
       })
 
       // Add change output if needed
@@ -592,6 +592,7 @@ export default function BurnInscriptionsPage() {
     </div>
   )
 }
+
 
 
 
