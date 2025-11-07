@@ -50,9 +50,9 @@ describe.skip('MaestroDataSource integration', () => {
   })
 
   it('fetches all inscriptions in batches of 50 and checks uniqueness', async () => {
-    let allIds: string[] = []
+    const allIds: string[] = []
     let offset = 0
-    let batchSize = 50
+    const batchSize = 50
     let batch: any[] = []
     let total = 0
     do {

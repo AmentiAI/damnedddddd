@@ -41,39 +41,35 @@ export const sendInscriptions = async ({
   dataSourceManager: DataSourceManager
   network: NetworkType
 }): Promise<string> => {
-  try {
-    const inscriptionsSendPsbt = await createInscriptionsSendPsbt({
-      inscriptionIds,
-      fromAddress: ordinalAddress,
-      fromAddressPublicKey: ordinalPublicKey,
-      fromPaymentAddress: paymentAddress,
-      fromPaymentPublicKey: paymentPublicKey,
-      dataSourceManager,
-      toAddress,
-      network,
-    })
+  const inscriptionsSendPsbt = await createInscriptionsSendPsbt({
+    inscriptionIds,
+    fromAddress: ordinalAddress,
+    fromAddressPublicKey: ordinalPublicKey,
+    fromPaymentAddress: paymentAddress,
+    fromPaymentPublicKey: paymentPublicKey,
+    dataSourceManager,
+    toAddress,
+    network,
+  })
 
-    if (!inscriptionsSendPsbt || !inscriptionsSendPsbt?.psbtHex) {
-      throw new Error("couldn't get commit tx")
-    }
-
-    const inscriptionsSendTxHex = String(inscriptionsSendPsbt?.psbtHex)
-    const inscriptonsSendTxBase64 = String(inscriptionsSendPsbt?.psbtBase64)
-    const response = await signPsbt({
-      tx: '',
-      psbtHex: inscriptionsSendTxHex,
-      psbtBase64: inscriptonsSendTxBase64,
-      finalize: true,
-      broadcast: false,
-      network,
-    })
-    if (!response) throw new Error('sign psbt failed')
-    const psbt = bitcoin.Psbt.fromHex(response?.signedPsbtHex || '')
-    const extracted = psbt.extractTransaction()
-    return await broadcastTx(extracted.toHex(), network)
-  } catch (e) {
-    throw e
+  if (!inscriptionsSendPsbt || !inscriptionsSendPsbt?.psbtHex) {
+    throw new Error("couldn't get commit tx")
   }
+
+  const inscriptionsSendTxHex = String(inscriptionsSendPsbt?.psbtHex)
+  const inscriptonsSendTxBase64 = String(inscriptionsSendPsbt?.psbtBase64)
+  const response = await signPsbt({
+    tx: '',
+    psbtHex: inscriptionsSendTxHex,
+    psbtBase64: inscriptonsSendTxBase64,
+    finalize: true,
+    broadcast: false,
+    network,
+  })
+  if (!response) throw new Error('sign psbt failed')
+  const psbt = bitcoin.Psbt.fromHex(response?.signedPsbtHex || '')
+  const extracted = psbt.extractTransaction()
+  return await broadcastTx(extracted.toHex(), network)
 }
 
 export const createInscriptionsSendPsbt = async ({
@@ -98,114 +94,112 @@ export const createInscriptionsSendPsbt = async ({
   psbtBase64: string
   psbtHex: string
 }> => {
-  try {
-    const { fastestFee: feeRate } =
-      await getRecommendedFeesMempoolSpace(network)
-    const utxos = await dataSourceManager.getAddressUtxos(fromPaymentAddress)
-    let sortedUtxos = utxos
-      .sort((a: { value: number }, b: { value: number }) => b.value - a.value)
-      .filter((utxo: { value: number }) => utxo.value > 3000)
-    if (sortedUtxos.length === 0) {
-      throw new Error('No utxos found')
+  const { fastestFee: feeRate } = await getRecommendedFeesMempoolSpace(network)
+  const utxos = await dataSourceManager.getAddressUtxos(fromPaymentAddress)
+  const sortedUtxos = utxos
+    .sort((a: { value: number }, b: { value: number }) => b.value - a.value)
+    .filter((utxo: { value: number }) => utxo.value > 3000)
+  if (sortedUtxos.length === 0) {
+    throw new Error('No utxos found')
+  }
+
+  const sandshrew = dataSourceManager.getSource('sandshrew')
+
+  if (!sandshrew || !sandshrew.batchOrdInscriptionInfo) {
+    throw new Error('Sandshrew data source not found')
+  }
+
+  const inscriptions = await sandshrew?.batchOrdInscriptionInfo(inscriptionIds)
+
+  console.log(inscriptions)
+
+  const psbt = new bitcoin.Psbt({ network: getBitcoinNetwork(network) })
+  const amountGathered = calculateValueOfUtxosGathered(sortedUtxos)
+  const minFee = estimateTxSize(inscriptions.length, 2, 4)
+  const calculatedFee = minFee * feeRate < 250 ? 250 : minFee * feeRate
+  const finalFee = calculatedFee
+
+  let counter = 0
+  for await (const runeOutput of inscriptions) {
+    const { value, satpoint } = runeOutput
+    const [txHash, vout] = satpoint.split(':')
+    if (!value || !txHash || !vout) {
+      throw new Error('Invalid satpoint or value')
     }
 
-    const sandshrew = dataSourceManager.getSource('sandshrew')
-
-    if (!sandshrew || !sandshrew.batchOrdInscriptionInfo) {
-      throw new Error('Sandshrew data source not found')
-    }
-
-    const inscriptions = await sandshrew?.batchOrdInscriptionInfo(inscriptionIds)
-
-    console.log(inscriptions)
-
-    let psbt = new bitcoin.Psbt({ network: getBitcoinNetwork(network) })
-    const amountGathered = calculateValueOfUtxosGathered(sortedUtxos)
-    const minFee = estimateTxSize(inscriptions.length, 2, 4)
-    const calculatedFee = minFee * feeRate < 250 ? 250 : minFee * feeRate
-    let finalFee = calculatedFee
-
-    let counter = 0
-    for await (const runeOutput of inscriptions) {
-      const { value, satpoint } = runeOutput
-      const [txHash, vout] = satpoint.split(':')
-      if (!value || !txHash || !vout) {
-        throw new Error('Invalid satpoint or value')
-      }
-
-      const script = bitcoin.address.toOutputScript(fromAddress, getBitcoinNetwork(MAINNET))
-      psbt.addInput({
-        hash: txHash,
-        index: parseInt(vout),
-        witnessUtxo: {
-          value: BigInt(value),
-          script
-        },
-        tapInternalKey: toXOnly(Buffer.from(fromAddressPublicKey, 'hex')),
-      })
-
-      psbt.addOutput({
+    const script = bitcoin.address.toOutputScript(
+      fromAddress,
+      getBitcoinNetwork(MAINNET)
+    )
+    psbt.addInput({
+      hash: txHash,
+      index: parseInt(vout),
+      witnessUtxo: {
         value: BigInt(value),
-        address: toAddress,
-      })
-      counter++
-    }
-
-    const paymentAddressType = getAddressType(fromPaymentAddress, network)
-    for (let i = 0; i < sortedUtxos.length; i++) {
-      const script = bitcoin.address.toOutputScript(
-        fromPaymentAddress,
-        getBitcoinNetwork(MAINNET)
-      )
-      const utxo = sortedUtxos[i]
-
-      if (paymentAddressType === P2TR) {
-        psbt.addInput({
-          hash: utxo.txid,
-          index: utxo.vout,
-          witnessUtxo: {
-            value: BigInt(utxo.value),
-            script,
-          },
-          tapInternalKey: toXOnly(Buffer.from(fromPaymentPublicKey, 'hex')),
-        })
-      }
-
-      if (paymentAddressType === P2SH) {
-        let redeemScript = getRedeemScript(fromPaymentPublicKey, network)
-        psbt.addInput({
-          hash: utxo.txid,
-          index: utxo.vout,
-          witnessUtxo: {
-            value: BigInt(utxo.value),
-            script,
-          },
-          redeemScript,
-        })
-      }
-
-      if (paymentAddressType === 'p2wpkh') {
-        psbt.addInput({
-          hash: utxo.txid,
-          index: utxo.vout,
-          witnessUtxo: {
-            value: BigInt(utxo.value),
-            script,
-          },
-        })
-      }
-    }
-
-    const changeAmount = amountGathered - (finalFee)
-
-    psbt.addOutput({
-      address: fromAddress,
-      value: BigInt(changeAmount),
+        script,
+      },
+      tapInternalKey: toXOnly(Buffer.from(fromAddressPublicKey, 'hex')),
     })
 
-    return { psbtBase64: psbt.toBase64(), psbtHex: psbt.toHex() }
-  } catch (error) {
-    throw error
+    psbt.addOutput({
+      value: BigInt(value),
+      address: toAddress,
+    })
+    counter++
   }
+
+  const paymentAddressType = getAddressType(fromPaymentAddress, network)
+  for (let i = 0; i < sortedUtxos.length; i++) {
+    const script = bitcoin.address.toOutputScript(
+      fromPaymentAddress,
+      getBitcoinNetwork(MAINNET)
+    )
+    const utxo = sortedUtxos[i]
+
+    if (paymentAddressType === P2TR) {
+      psbt.addInput({
+        hash: utxo.txid,
+        index: utxo.vout,
+        witnessUtxo: {
+          value: BigInt(utxo.value),
+          script,
+        },
+        tapInternalKey: toXOnly(Buffer.from(fromPaymentPublicKey, 'hex')),
+      })
+    }
+
+    if (paymentAddressType === P2SH) {
+      const redeemScript = getRedeemScript(fromPaymentPublicKey, network)
+      psbt.addInput({
+        hash: utxo.txid,
+        index: utxo.vout,
+        witnessUtxo: {
+          value: BigInt(utxo.value),
+          script,
+        },
+        redeemScript,
+      })
+    }
+
+    if (paymentAddressType === 'p2wpkh') {
+      psbt.addInput({
+        hash: utxo.txid,
+        index: utxo.vout,
+        witnessUtxo: {
+          value: BigInt(utxo.value),
+          script,
+        },
+      })
+    }
+  }
+
+  const changeAmount = amountGathered - finalFee
+
+  psbt.addOutput({
+    address: fromAddress,
+    value: BigInt(changeAmount),
+  })
+
+  return { psbtBase64: psbt.toBase64(), psbtHex: psbt.toHex() }
 }
 

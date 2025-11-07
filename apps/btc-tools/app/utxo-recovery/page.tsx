@@ -195,7 +195,7 @@ export default function UTXORecoveryPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">🔄 UTXO Recovery</h1>
         <p className="text-muted-foreground">
-          Move large UTXOs (>600 sats) between your payment and ordinals addresses
+          Move large UTXOs (&gt;600 sats) between your payment and ordinals addresses
         </p>
       </div>
 

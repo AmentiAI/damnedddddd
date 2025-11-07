@@ -200,7 +200,7 @@ export default class PhantomProvider extends WalletProvider {
         address: paymentAddress,
         signingIndexes: [] as number[],
       }
-      for (let counter of inputs.keys()) {
+      for (const counter of inputs.keys()) {
         const input = inputs[counter]
         if (input.witnessUtxo === undefined) {
           paymentsAddressData.signingIndexes.push(Number(counter))

@@ -155,18 +155,14 @@ export default class OkxProvider extends WalletProvider {
       }
     }
 
-    try {
-      const okxAccounts = await this.library.connect()
-      if (!okxAccounts) throw new Error('No accounts found')
+    const okxAccounts = await this.library.connect()
+    if (!okxAccounts) throw new Error('No accounts found')
 
-      this.$store.setKey('address', okxAccounts.address)
-      this.$store.setKey('paymentAddress', okxAccounts.address)
-      this.$store.setKey('publicKey', okxAccounts.publicKey)
-      this.$store.setKey('paymentPublicKey', okxAccounts.publicKey)
-      this.$store.setKey('accounts', [okxAccounts.address])
-    } catch (e) {
-      throw e
-    }
+    this.$store.setKey('address', okxAccounts.address)
+    this.$store.setKey('paymentAddress', okxAccounts.address)
+    this.$store.setKey('publicKey', okxAccounts.publicKey)
+    this.$store.setKey('paymentPublicKey', okxAccounts.publicKey)
+    this.$store.setKey('accounts', [okxAccounts.address])
   }
 
   async requestAccounts(): Promise<string[]> {

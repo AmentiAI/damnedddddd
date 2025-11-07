@@ -1,4 +1,9 @@
-import { type DependencyList, type EffectCallback, useEffect } from "react"
+import {
+  type DependencyList,
+  type EffectCallback,
+  useEffect,
+  useRef,
+} from "react"
 import { useLaserEyes } from "../providers/hooks"
 import { compareValues } from "../utils/comparison"
 
@@ -36,6 +41,21 @@ export function useAccountEffect(
   dependencies: DependencyList,
 ) {
   const store = useLaserEyes(x => x.client?.$store)
+  const dependenciesRef = useRef<DependencyList>()
+  const dependenciesVersionRef = useRef(0)
+
+  if (
+    !dependenciesRef.current ||
+    dependenciesRef.current.length !== dependencies.length ||
+    dependencies.some((dep, index) =>
+      !Object.is(dep, dependenciesRef.current?.[index]),
+    )
+  ) {
+    dependenciesVersionRef.current += 1
+    dependenciesRef.current = dependencies
+  }
+
+  const dependenciesVersion = dependenciesVersionRef.current
 
   useEffect(() => {
     if (!store) return
@@ -54,5 +74,5 @@ export function useAccountEffect(
       stUnsub()
       unsub?.()
     }
-  }, [store, callback, ...dependencies])
+  }, [store, callback, dependenciesVersion])
 }

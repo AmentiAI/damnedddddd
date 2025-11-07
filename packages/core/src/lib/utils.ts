@@ -80,7 +80,7 @@ export const selectSpendableUTXOs = (
 
   spendableUTXOs.utxos.sort((a, b) => b.btcValue - a.btcValue)
 
-  let selectedUTXOs: FormattedUTXO[] = []
+  const selectedUTXOs: FormattedUTXO[] = []
 
   for (const utxo of spendableUTXOs.utxos) {
     selectedUTXOs.push(utxo)

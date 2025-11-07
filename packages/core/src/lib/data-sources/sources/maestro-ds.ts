@@ -109,7 +109,7 @@ export class MaestroDataSource implements DataSource {
   ): Promise<MaestroGetAddressInscriptions> {
     let cursor: string | undefined = undefined
     let toSkip = offset
-    let batchSize = 100
+    const batchSize = 100
     let lastResponse: any = null
 
     while (toSkip > 0) {
