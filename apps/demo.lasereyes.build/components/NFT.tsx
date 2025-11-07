@@ -1,8 +1,35 @@
 import type { ContentType } from '@omnisat/lasereyes'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+
+const getMimeType = (contentType: ContentType) =>
+  contentType.split(';')[0].trim().toLowerCase()
+
+const isImageContentType = (contentType: ContentType) =>
+  getMimeType(contentType).startsWith('image/') &&
+  getMimeType(contentType) !== 'image/gif' &&
+  getMimeType(contentType) !== 'image/svg+xml'
+
+const isGifContentType = (contentType: ContentType) =>
+  getMimeType(contentType) === 'image/gif'
+
+const isSvgContentType = (contentType: ContentType) =>
+  getMimeType(contentType) === 'image/svg+xml'
+
+const isHtmlContentType = (contentType: ContentType) =>
+  getMimeType(contentType) === 'text/html'
+
+const isTextContentType = (contentType: ContentType) =>
+  getMimeType(contentType) === 'text/plain'
+
+const isJsonContentType = (contentType: ContentType) =>
+  getMimeType(contentType) === 'application/json'
+
+const isJavaScriptContentType = (contentType: ContentType) =>
+  getMimeType(contentType) === 'text/javascript'
 
 const InscriptionComponent = ({
   contentUrl,
@@ -23,32 +50,6 @@ const InscriptionComponent = ({
   const [textContent, setTextContent] = useState<string | null>(null)
   const [jsonContent, setJsonContent] = useState<any | null>(null)
   const [jsContent, setJsContent] = useState<string | null>(null)
-
-  const getMimeType = (contentType: ContentType) =>
-    contentType.split(';')[0].trim().toLowerCase()
-
-  const isImageContentType = (contentType: ContentType) =>
-    getMimeType(contentType).startsWith('image/') &&
-    getMimeType(contentType) !== 'image/gif' &&
-    getMimeType(contentType) !== 'image/svg+xml'
-
-  const isGifContentType = (contentType: ContentType) =>
-    getMimeType(contentType) === 'image/gif'
-
-  const isSvgContentType = (contentType: ContentType) =>
-    getMimeType(contentType) === 'image/svg+xml'
-
-  const isHtmlContentType = (contentType: ContentType) =>
-    getMimeType(contentType) === 'text/html'
-
-  const isTextContentType = (contentType: ContentType) =>
-    getMimeType(contentType) === 'text/plain'
-
-  const isJsonContentType = (contentType: ContentType) =>
-    getMimeType(contentType) === 'application/json'
-
-  const isJavaScriptContentType = (contentType: ContentType) =>
-    getMimeType(contentType) === 'text/javascript'
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -160,9 +161,12 @@ const InscriptionComponent = ({
 
     if (isGifContentType(contentType)) {
       return (
-        <img
+        <Image
           src={contentUrl}
           alt="GIF inscription"
+          width={size}
+          height={size}
+          unoptimized
           style={{
             margin: 'auto',
             display: 'block',

@@ -14,7 +14,7 @@ import { Handshake, Download, Loader2, Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function CreateOfferPage() {
-  const { address, connected, client, $network } = useLaserEyes()
+  const { address, connected, client, network: activeNetwork } = useLaserEyes()
   
   const [inscriptionId, setInscriptionId] = useState('')
   const [sellerAddress, setSellerAddress] = useState('')
@@ -58,8 +58,6 @@ export default function CreateOfferPage() {
 
     try {
       const price = Math.floor(parseFloat(offerPrice))
-      const network = $network.get()
-
       const { psbtBase64, psbtHex, offerDetails } = await createOfferPSBT(
         client,
         inscriptionId.trim(),
@@ -69,7 +67,7 @@ export default function CreateOfferPage() {
         paymentAddress,
         paymentPublicKey,
         feeRate,
-        network
+        activeNetwork
       )
 
       setOfferPSBT(psbtBase64)
@@ -82,6 +80,8 @@ export default function CreateOfferPage() {
         psbt_hex: psbtHex,
         psbt_base64: psbtBase64,
         status: 'pending',
+        accepted_by: null,
+        tx_id: null,
       })
 
       toast.success('Offer PSBT created successfully!')
